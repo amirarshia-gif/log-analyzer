@@ -1,11 +1,7 @@
-
-
-
 import sys
-import os
 import argparse
 import json
-import subprocess
+import unittest
 
 from analyzer import analyze_log
 from report import (
@@ -36,19 +32,17 @@ to use interactive mode instead.
 
 
 def run_tests(report=None):
-    """Run tests.py exactly the way `python3 tests.py` would from the
-    terminal, and show its normal output. Takes an unused `report`
-    argument only so it fits the same MENU_ACTIONS calling convention
-    as the other menu options."""
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    result = subprocess.run(
-        [sys.executable, "tests.py"],
-        cwd=script_dir,
-        capture_output=True,
-        text=True,
-    )
-    print(result.stdout, end="")
-    print(result.stderr, end="")
+    """Run the test suite in-process using unittest directly, instead of
+    spawning `python3 tests.py` as a separate process. This matters once
+    the app is packaged as a standalone binary: there's no python
+    interpreter or standalone tests.py file to spawn at that point --
+    `tests` is just another module bundled inside the same executable.
+    Takes an unused `report` argument only so it fits the same
+    MENU_ACTIONS calling convention as the other menu options."""
+    import tests  # imported here, not at the top, since it's only needed for this one option
+
+    suite = unittest.TestLoader().loadTestsFromModule(tests)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
 
 # maps a menu number to (label shown to the user, function that runs that option)
@@ -58,7 +52,7 @@ MENU_ACTIONS = {
     "3": ("Hourly Chart", lambda report: print_hourly_chart(report["hourly_requests"])),
     "4": ("Suspicious Login Attempts", print_suspicious),
     "5": ("Full Report (everything)", print_report),
-    "6": ("Run Tests (tests.py)", run_tests),
+    "6": ("Run Tests", run_tests),
 }
 
 
