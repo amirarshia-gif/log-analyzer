@@ -1,4 +1,5 @@
 def print_summary(data):
+    """Print total requests, malformed lines, unique IPs, and error rate."""
     print("=" * 65)
     print("Web Server Log Analysis Report")
     print("=" * 65)
@@ -20,6 +21,7 @@ def print_summary(data):
 
 
 def print_endpoints(data):
+    """Print the 10 most requested endpoints."""
     print("Top Endpoints")
     print("-" * 60)
 
@@ -29,6 +31,7 @@ def print_endpoints(data):
 
 
 def print_suspicious(data):
+    """Print IPs with 10+ failed /login attempts (possible brute force)."""
     print("Suspicious Login Attempts")
     print("-" * 60)
 
@@ -49,7 +52,7 @@ def print_suspicious(data):
 
 
 def print_report(data):
-    """Full report: every section, in order."""
+    """Print the full report: every section, in order."""
     print_summary(data)
     print_endpoints(data)
     print_hourly_chart(data["hourly_requests"])
@@ -57,9 +60,8 @@ def print_report(data):
 
 
 def print_hourly_chart(hourly_requests, chart_height=10):
-    """Vertical bar chart: one column per hour, with the exact request
-    count written as a full number on one row directly above each bar.
-    Scale runs from 0 (bottom) to the busiest hour's count (top)."""
+    """Print a vertical bar chart of requests per hour: one column per
+    hour, the exact count written above each bar, scale 0 to max."""
 
     print("Hourly Requests")
     print("-" * 60)
@@ -74,13 +76,13 @@ def print_hourly_chart(hourly_requests, chart_height=10):
     # column needs to be wide enough to fit the longest number, plus padding
     col_width = max(len(str(max_count)) + 2, 8)
 
-    # how tall each bar is, in rows (at least 1 row if it has any requests)
+    # bar height in rows, scaled so the busiest hour reaches chart_height
     bar_heights = {
         hour: max(1, round(hourly_requests[hour] / max_count * chart_height))
         for hour in hours
     }
 
-    label_rows = 1  # a single row reserved for the number, right above the bar
+    label_rows = 1  # one row reserved for the number, right above the bar
     total_rows = label_rows + chart_height
 
     for row in range(total_rows):

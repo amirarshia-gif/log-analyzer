@@ -1,24 +1,11 @@
-"""
-Log Analyzer CLI
 
-Commands:
-  summary     Show total requests, malformed lines, unique IPs, and error rate
-  endpoints   Show the top 10 most requested endpoints
-  hourly      Show a vertical bar chart of requests per hour
-  suspicious  Show IPs with repeated failed /login attempts
-  all         Show the full report (every section above, combined)
 
-Usage:
-  python3 cli.py <command> <logfile> [--json]   (direct mode)
-  python3 cli.py                                (interactive mode)
 
-Example:
-  python3 cli.py hourly access.log
-  python3 cli.py all access.log --json
-"""
-
+import sys
+import os
 import argparse
 import json
+import subprocess
 
 from analyzer import analyze_log
 from report import (
@@ -28,6 +15,8 @@ from report import (
     print_hourly_chart,
     print_suspicious,
 )
+
+VALID_COMMANDS = {"summary", "endpoints", "hourly", "suspicious", "all"}
 
 QUICK_REFERENCE = """\
 commands:
@@ -41,23 +30,45 @@ example:
   python3 cli.py hourly access.log
   python3 cli.py all access.log --json
 
-run with no arguments at all to use interactive mode instead.
+run with no arguments, or with just a file path and no command,
+to use interactive mode instead.
 """
 
-# maps a menu choice to (label shown to the user, function that prints it)
+
+def run_tests(report=None):
+    """Run tests.py exactly the way `python3 tests.py` would from the
+    terminal, and show its normal output. Takes an unused `report`
+    argument only so it fits the same MENU_ACTIONS calling convention
+    as the other menu options."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    result = subprocess.run(
+        [sys.executable, "tests.py"],
+        cwd=script_dir,
+        capture_output=True,
+        text=True,
+    )
+    print(result.stdout, end="")
+    print(result.stderr, end="")
+
+
+# maps a menu number to (label shown to the user, function that runs that option)
 MENU_ACTIONS = {
     "1": ("Summary", print_summary),
     "2": ("Top Endpoints", print_endpoints),
     "3": ("Hourly Chart", lambda report: print_hourly_chart(report["hourly_requests"])),
     "4": ("Suspicious Login Attempts", print_suspicious),
     "5": ("Full Report (everything)", print_report),
+    "6": ("Run Tests (tests.py)", run_tests),
 }
 
 
-def run_interactive():
+def run_interactive(file_path=None):
+    """Interactive menu loop. If file_path is already known (the user typed
+    just a filename with no command), skip straight past the file prompt."""
     print("=== Log Analyzer -- interactive mode ===\n")
 
-    file_path = input("Path to the access log file: ").strip()
+    if file_path is None:
+        file_path = input("Path to the access log file: ").strip()
 
     try:
         report = analyze_log(file_path)
@@ -87,9 +98,8 @@ def run_interactive():
             print("Not a valid option -- pick a number from the list above.\n")
 
 
-def main():
-    # shared arguments every subcommand needs: the file to analyze,
-    # and the option to also dump the full data as JSON
+def run_direct(argv):
+    """Direct mode: `<command> <file> [--json]` -- prints one section and exits."""
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("file", help="Path to log file")
     common.add_argument("--json", action="store_true", help="Also save the full report as report.json")
@@ -99,11 +109,7 @@ def main():
         epilog=QUICK_REFERENCE,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    subparsers = parser.add_subparsers(
-        dest="command",
-        required=False,  # optional now: no command at all -> interactive mode
-        help="Which part of the report to show (omit for interactive mode)",
-    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("summary", parents=[common], help="Totals, unique IPs, error rate")
     subparsers.add_parser("endpoints", parents=[common], help="Top 10 requested endpoints")
@@ -111,12 +117,7 @@ def main():
     subparsers.add_parser("suspicious", parents=[common], help="Suspicious login attempts")
     subparsers.add_parser("all", parents=[common], help="Full report (every section)")
 
-    args = parser.parse_args()
-
-    if args.command is None:
-        run_interactive()
-        return
-
+    args = parser.parse_args(argv)
     report = analyze_log(args.file)
 
     if args.command == "summary":
@@ -134,6 +135,22 @@ def main():
         with open("report.json", "w") as file:
             json.dump(report, file, indent=4)
         print("JSON report saved as report.json")
+
+
+def main():
+    """Decide which mode to run based on what was typed, before argparse
+    ever gets involved -- this is what lets a bare filename (no command)
+    fall through to interactive mode instead of failing."""
+    argv = sys.argv[1:]
+
+    if len(argv) == 0:
+        run_interactive()
+    elif argv[0] in VALID_COMMANDS:
+        run_direct(argv)
+    else:
+        # first word isn't a known command -- treat it as a file path
+        # and jump into interactive mode with it already loaded
+        run_interactive(file_path=argv[0])
 
 
 if __name__ == "__main__":

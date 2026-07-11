@@ -4,7 +4,9 @@ from parser import parse_line
 
 import gzip
 
+
 def analyze_log(file_path):
+    """Stream a log file line by line and return a dict of aggregated stats."""
     total_requests = 0
     malformed_lines = 0
     error_requests = 0
@@ -17,6 +19,7 @@ def analyze_log(file_path):
 
     hourly_requests = Counter()
 
+    # handling .gz files to read
     if file_path.endswith(".gz"):
         file = gzip.open(
         file_path,
@@ -46,6 +49,8 @@ def analyze_log(file_path):
 
             endpoints[log["endpoint"]] += 1
 
+            # timestamp looks like "01/Jun/2026:09:14:22 +0000";
+            # characters 12-13 are the hour, e.g. "09"
             hour = log["timestamp"][12:14]
 
             hourly_requests[hour] += 1
@@ -53,7 +58,8 @@ def analyze_log(file_path):
             if log["status"] >= 400:
                 error_requests += 1
 
-
+            # a failed login attempt on /login -- used for the
+            # "suspicious activity" report
             if (
                 log["endpoint"] == "/login"
                 and log["status"] == 401
@@ -71,5 +77,3 @@ def analyze_log(file_path):
         "error_requests": error_requests,
         "failed_login_ips": failed_login_ips,
     }
-
-
