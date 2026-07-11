@@ -71,3 +71,5 @@ def analyze_log(file_path):
         "error_requests": error_requests,
         "failed_login_ips": failed_login_ips,
     }
+
+

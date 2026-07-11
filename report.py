@@ -1,8 +1,10 @@
 def print_report(data):
 
-    print("=" * 60)
-    print("LOG ANALYSIS REPORT")
-    print("=" * 60)
+    print("=" * 65)
+
+    print("Web Server Log Analysis Report")
+
+    print("=" * 65)
 
     print(f"Total Requests : {data['total_requests']}")
     print(f"Malformed Lines: {data['malformed_lines']}")
@@ -29,30 +31,36 @@ def print_report(data):
 
     print()
 
+
+   
     print("Hourly Requests")
+
     print("-" * 60)
+
+    max_requests = max(data["hourly_requests"].values(), default=1)
 
     for hour in sorted(data["hourly_requests"]):
 
         count = data["hourly_requests"][hour]
 
-        bar = "█" * min(count // 100, 50)
+        bar_length = int((count / max_requests) * 40)
 
-        print(f"{hour}:00 | {bar} ({count})"
-              )
+        bar = "█" * bar_length
+
+        print(f"{hour}:00 | {bar:<40} ({count})")
 
 
-print()
+    print()
 
-print("Suspicious Login Attempts")
+    print("Suspicious Login Attempts")
 
-print("-" * 60)
+    print("-" * 60)
 
-for ip, count in data["failed_login_ips"].most_common(10):
+    for ip, count in data["failed_login_ips"].most_common(10):
 
-    if count >= 10:
+        if count >= 10:
 
-        print(f"{ip:<20}{count}")    
+         print(f"{ip:<20}{count}")    
 
 
 
