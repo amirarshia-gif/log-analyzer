@@ -1,0 +1,64 @@
+name: Build and Release Binaries
+
+# runs whenever a tag like "0.1" or "v0.1" is pushed
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write   # needed to attach files to a GitHub Release
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset_name: logger
+          - os: windows-latest
+            asset_name: logger.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build binary
+        run: pyinstaller --onefile --name logger cli.py
+
+      - name: Upload binary as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: dist/${{ matrix.asset_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Linux binary
+        uses: actions/download-artifact@v4
+        with:
+          name: logger
+          path: release-files
+
+      - name: Download Windows binary
+        uses: actions/download-artifact@v4
+        with:
+          name: logger.exe
+          path: release-files
+
+      - name: Create GitHub Release with both binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-files/logger
+            release-files/logger.exe
