@@ -42,16 +42,21 @@ def print_report(data):
               )
 
 
+print()
+
+print("Suspicious Login Attempts")
+
+print("-" * 60)
+
+for ip, count in data["failed_login_ips"].most_common(10):
+
+    if count >= 10:
+
+        print(f"{ip:<20}{count}")    
 
 
 
 
 
-from report import print_report
 
-if __name__ == "__main__":
-
-    report = analyze_log("access.log")
-
-    print_report(report)
 
