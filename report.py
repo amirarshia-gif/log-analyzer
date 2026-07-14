@@ -55,13 +55,14 @@ def print_report(data):
     """Print the full report: every section, in order."""
     print_summary(data)
     print_endpoints(data)
-    print_hourly_chart(data["hourly_requests"])
+    print_hourly_chart(data)
     print_suspicious(data)
 
 
-def print_hourly_chart(hourly_requests, chart_height=10):
+def print_hourly_chart(data, chart_height=10):
     """Print a vertical bar chart of requests per hour: one column per
     hour, the exact count written above each bar, scale 0 to max."""
+    hourly_requests = data["hourly_requests"]
 
     print("Hourly Requests")
     print("-" * 60)

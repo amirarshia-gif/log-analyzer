@@ -1,3 +1,26 @@
+"""
+Log Analyzer CLI
+
+Commands:
+  summary     Show total requests, malformed lines, unique IPs, and error rate
+  endpoints   Show the top 10 most requested endpoints
+  hourly      Show a vertical bar chart of requests per hour
+  suspicious  Show IPs with repeated failed /login attempts
+  all         Show the full report (every section above, combined)
+
+Usage:
+  python3 cli.py <command> <logfile> [--json]   direct mode: one section, prints and exits
+  python3 cli.py <logfile>                      interactive mode, file already given
+  python3 cli.py                                interactive mode, asks for the file first
+
+In interactive mode, option 6 runs the project's unit tests (tests.py)
+and prints their normal output right in the menu.
+
+Example:
+  python3 cli.py hourly access.log
+  python3 cli.py all access.log --json
+"""
+
 import sys
 import argparse
 import json
@@ -49,7 +72,7 @@ def run_tests(report=None):
 MENU_ACTIONS = {
     "1": ("Summary", print_summary),
     "2": ("Top Endpoints", print_endpoints),
-    "3": ("Hourly Chart", lambda report: print_hourly_chart(report["hourly_requests"])),
+    "3": ("Hourly Chart", print_hourly_chart),
     "4": ("Suspicious Login Attempts", print_suspicious),
     "5": ("Full Report (everything)", print_report),
     "6": ("Run Tests", run_tests),
@@ -119,7 +142,7 @@ def run_direct(argv):
     elif args.command == "endpoints":
         print_endpoints(report)
     elif args.command == "hourly":
-        print_hourly_chart(report["hourly_requests"])
+        print_hourly_chart(report)
     elif args.command == "suspicious":
         print_suspicious(report)
     elif args.command == "all":
